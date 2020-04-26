@@ -1,7 +1,6 @@
 <script>
   import { onMount } from 'svelte';
   import p5 from 'p5';
-  import ml5 from 'ml5';
 
   let myp5;
   let featureExtractor;
@@ -244,7 +243,7 @@
             <button
               class="button {activeLabelButton === label ? 'is-info' : ''}"
               on:click={_ => addTrainingExampleFor(label)}>
-              Add as {label}
+              Add as a {label}
             </button>
           </div>
         {/each}
