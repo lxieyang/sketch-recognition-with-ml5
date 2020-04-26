@@ -21,8 +21,8 @@
   let mode = 'train'; // 'train' or 'test'
   let classificationResults = [
     // { label: 'rect', confidence: 0.7213 },
-    // { label: 'line', confidence: 0.7213 },
-    // { label: 'circle', confidence: 0.7213 },
+    // { label: 'line', confidence: 0.05 },
+    // { label: 'circle', confidence: 0.23 },
   ];
 
   function checkCanTrain(lbs = new Map()) {
@@ -37,9 +37,11 @@
 
   let sketch = function(p5) {
     let canvas;
+    let canvasWidth = 200;
+    let canvasHeight = 150;
 
     p5.setup = () => {
-      canvas = p5.createCanvas(200, 150);
+      canvas = p5.createCanvas(canvasWidth, canvasHeight);
       canvas.parent('canvas-holder');
       p5.background('white');
       p5.strokeWeight(6);
@@ -52,8 +54,10 @@
     };
 
     p5.touchEnded = () => {
-      if (mode === 'test' && classifier && classify) {
-        classify();
+      if (p5.mouseX >= 0 && p5.mouseY >= 0 && p5.mouseX <= canvasWidth && p5.mouseY <= canvasHeight) {
+        if (mode === 'test' && classifier && classify) {
+          classify();
+        }
       }
     };
 
@@ -89,9 +93,9 @@
   }
 
   function trainModel() {
-    modelStatus = 'loading model';
+    modelStatus = 'loading model...';
     featureExtractor = ml5.featureExtractor('MobileNet', { numLabels: Array.from(labels.keys()).length }, () => {
-      modelStatus = 'model ready';
+      modelStatus = 'adding training examples...';
       let promises = [];
       Array.from(labels.keys()).forEach(lb => {
         const examples = labels.get(lb);
@@ -105,9 +109,9 @@
         console.log('training examples added');
         classifier.train(function(lossValue) {
           if (lossValue) {
-            modelStatus = 'loss: ' + lossValue;
+            modelStatus = 'training, loss: ' + lossValue;
           } else {
-            modelStatus = 'Done!';
+            modelStatus = 'done!';
           }
         });
       });
@@ -126,7 +130,7 @@
       // console.log(results);
       if (results && results[0]) {
         classificationResults = results;
-        myp5.clearCanvas();
+        // myp5.clearCanvas();
       }
     });
   }
@@ -158,8 +162,20 @@
     margin: 8px;
   }
 
-  .result-item .tag {
-    margin-left: 4px;
+  .result-item .item {
+    display: flex;
+    align-items: center;
+    min-width: 110px;
+    margin-right: 8px;
+  }
+
+  .result-item .item .tag {
+    margin: 0px 4px;
+  }
+
+  .result-item .progress-bar-container {
+    margin: 0px 4px;
+    flex: 1;
   }
 </style>
 
@@ -178,32 +194,48 @@
       <div class="control">
         <div class="tags has-addons">
           <span class="tag is-link is-light">{label}</span>
-          <span class="tag is-delete" on:click={e => removeLabel(label)} />
+          {#if mode === 'train'}
+            <span class="tag is-delete" on:click={e => removeLabel(label)} />
+          {/if}
         </div>
       </div>
     {/each}
   </div>
 
-  <div class="field has-addons">
-    <div class="control">
-      <input class="input is-small" type="text" placeholder="Add a label" bind:value={newLabel} />
+  {#if mode === 'train'}
+    <div class="field has-addons">
+      <div class="control">
+        <input class="input is-small" type="text" placeholder="Add a label" bind:value={newLabel} />
+      </div>
+      <div class="control">
+        <button
+          class="button is-small is-primary"
+          disabled={toAdd.length === 0 || labels.has(toAdd)}
+          on:click={addNewLabel}>
+          Add
+        </button>
+        {#if labels.has(toAdd)}
+          <em class="content has-text-danger is-small">exists!</em>
+        {/if}
+      </div>
     </div>
-    <div class="control">
-      <button
-        class="button is-small is-primary"
-        disabled={toAdd.length === 0 || labels.has(toAdd)}
-        on:click={addNewLabel}>
-        Add
-      </button>
-      {#if labels.has(toAdd)}
-        <em class="content has-text-danger is-small">exists!</em>
-      {/if}
-    </div>
-  </div>
+  {/if}
 
   <br />
   <div class="columns">
-    <div class="column is-one-quarter" id="canvas-holder" />
+    <div class="column is-one-third">
+      <div id="canvas-holder" />
+      <button
+        class="button is-light is-small"
+        on:click={_ => {
+          myp5.clearCanvas();
+          if (mode === 'test') {
+            classificationResults = [];
+          }
+        }}>
+        Clear
+      </button>
+    </div>
     {#if mode === 'train'}
       <div class="column add-examples-container">
         {#each Array.from(labels.keys()) as label}
@@ -239,13 +271,28 @@
       <button class="button is-link" disabled={!canTrain} on:click={trainModel}>Train</button>
     </div>
   {:else if mode === 'test'}
-    <div class="title is-6">Start by drawing on the canvas</div>
+    {#if classificationResults.length === 0}
+      <div class="title is-6">Start by drawing on the canvas</div>
+    {:else}
+      <div class="title is-6">Classification results:</div>
+    {/if}
     {#each classificationResults as item, idx}
       <div class="result-item">
-        Label:
-        <span class="tag {idx === 0 ? 'is-success' : ''}">{item.label}</span>
-        &nbsp; Confidence:
-        <span class="tag {idx === 0 ? 'is-success is-light' : ''}">{item.confidence}</span>
+        <div class="item">
+          Label:
+          <span class="tag {idx === 0 ? 'is-success' : ''}">{item.label}</span>
+        </div>
+        <div class="item">
+          Confidence:
+          <span class="tag {idx === 0 ? 'is-success is-light' : ''}">{item.confidence.toFixed(4)}</span>
+        </div>
+
+        <div class="progress-bar-container">
+          <progress class="progress {idx === 0 ? 'is-success' : ''}" value={item.confidence} max="1">
+            {item.confidence}
+          </progress>
+        </div>
+
       </div>
     {/each}
   {/if}
