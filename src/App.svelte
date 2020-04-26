@@ -80,6 +80,13 @@
     canvasHeight = canvasHolderDiv.clientHeight;
 
     myp5 = new p5(sketch);
+
+    window.addEventListener('beforeunload', event => {
+      let msg = 'Are you sure you want to leave?';
+      // Chrome requires returnValue to be set.
+      event.returnValue = msg;
+      return msg;
+    });
   });
 
   function addNewLabel() {
@@ -172,6 +179,40 @@
     });
 
     classifier = featureExtractor.classification();
+  }
+
+  async function loadTrainingImages(e) {
+    const f = e.target.files[0];
+
+    if (f.type !== 'application/zip') {
+      alert('Need a zip file.');
+      return;
+    }
+
+    Object.filter = (obj, predicate) =>
+      Object.keys(obj)
+        .filter(key => predicate(obj[key]))
+        .reduce((res, key) => ((res[key] = obj[key]), res), {});
+
+    let images = Object.filter((await JSZip.loadAsync(f)).files, f => f.dir === false);
+
+    const filenames = Object.keys(images);
+    let newLabels = new Map();
+    const strippedFilenames = new Set(
+      filenames.map(fn => fn.replace('training-images/', '')).map(fn => fn.split('-')[0]),
+    );
+    strippedFilenames.forEach(lb => {
+      newLabels.set(lb, []);
+    });
+
+    for (let i = 0; i < filenames.length; i++) {
+      let content = await images[filenames[i]].async('base64');
+      let label = filenames[i].replace('training-images/', '').split('-')[0];
+
+      newLabels.get(label).push('data:image/png;base64,' + content);
+    }
+
+    labels = newLabels;
   }
 </script>
 
@@ -426,6 +467,10 @@
       <br />
       <span class="tag is-info">Load model:</span>
       <input type="file" name="myfile" multiple on:change={loadModel} />
+      <br />
+      <br />
+      <span class="tag is-info">Load training images:</span>
+      <input type="file" name="myfile" on:change={loadTrainingImages} />
     </div>
   {:else if mode === 'test'}
     {#if classificationResults.length === 0}
