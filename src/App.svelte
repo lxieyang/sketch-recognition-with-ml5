@@ -19,6 +19,9 @@
 
   let activeLabelButton = '';
 
+  let modalOpen = false;
+  let modalLabel = 'Rectangle';
+
   let mode = 'train'; // 'train' or 'test'
   let classificationResults = [
     // { label: 'rect', confidence: 0.7213 },
@@ -204,6 +207,20 @@
     height: 80%;
   }
 
+  .example-in-modal {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6px;
+  }
+
+  .example-in-modal img {
+    width: 300px;
+    border: 1px dotted lightgray;
+    margin-right: 10px;
+  }
+
   .result-item {
     display: flex;
     align-items: center;
@@ -298,11 +315,19 @@
                 Add as a
                 <span class="has-text-weight-bold" style="margin-left: 4px">{label}</span>
               </button>
-              <button title="Edit examples" class="button is-small">Count: {labels.get(label).length}</button>
+              <button
+                title="Edit examples"
+                class="button is-small"
+                on:click={_ => {
+                  modalLabel = label;
+                  modalOpen = true;
+                }}>
+                Count: {labels.get(label).length}
+              </button>
             </div>
 
             <div class="example-images-container">
-              {#each labels.get(label).slice(0, 5) as img}
+              {#each [...labels.get(label)].reverse().slice(0, 5) as img}
                 <img src={img} alt="" />
               {/each}
               {#if labels.get(label).length > 5}...{/if}
@@ -312,6 +337,38 @@
         {/each}
       </div>
     {/if}
+  </div>
+
+  <div class="modal {modalOpen ? 'is-active' : ''}">
+    <div class="modal-background" />
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Training examples for {modalLabel} (Total: {labels.get(modalLabel).length})</p>
+        <button class="delete" aria-label="close" on:click={_ => (modalOpen = false)} />
+      </header>
+      <section class="modal-card-body">
+        {#if labels.get(modalLabel).length === 0}
+          <em class="content has-text-danger ">No training examples available. Please add some!</em>
+        {/if}
+        {#each [...labels.get(modalLabel)].reverse() as img}
+          <div class="example-in-modal">
+            <img src={img} alt="" />
+            <button
+              class="button is-danger"
+              on:click={_ => {
+                let examples = labels.get(modalLabel).filter(item => item !== img);
+                labels.set(modalLabel, examples);
+                labels = labels;
+              }}>
+              Delete
+            </button>
+          </div>
+        {/each}
+      </section>
+      <footer class="modal-card-foot">
+        <button class="button" on:click={_ => (modalOpen = false)}>Close</button>
+      </footer>
+    </div>
   </div>
 
   <div class="tabs is-medium">
