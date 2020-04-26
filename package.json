@@ -1,0 +1,26 @@
+{
+  "name": "simple-sketch-recognition",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "start": "sirv public",
+    "prettier": "npx prettier --write \"{,!(node_modules)/**/}*.{js,jsx,svelte}\""
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "11.0.2",
+    "@rollup/plugin-node-resolve": "^7.0.0",
+    "prettier": "^2.0.5",
+    "prettier-plugin-svelte": "^0.7.0",
+    "rollup": "^1.20.0",
+    "rollup-plugin-livereload": "^1.0.0",
+    "rollup-plugin-svelte": "^5.0.3",
+    "rollup-plugin-terser": "^5.1.2",
+    "svelte": "^3.21.0"
+  },
+  "dependencies": {
+    "ml5": "^0.5.0",
+    "p5": "^1.0.0",
+    "sirv-cli": "^0.4.4"
+  }
+}
