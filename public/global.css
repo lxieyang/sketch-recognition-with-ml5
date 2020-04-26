@@ -2,3 +2,11 @@ body {
   margin: 0;
   padding: 10px;
 }
+
+img {
+  display: none;
+}
+
+canvas {
+  border: 1px solid black;
+}
