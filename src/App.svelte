@@ -3,14 +3,16 @@
   import p5 from 'p5';
 
   let myp5;
+  let canvasWidth = 200;
+  let canvasHeight = 150;
   let featureExtractor;
   let classifier;
   let modelStatus = '';
 
   let labels = new Map();
-  labels.set('rect', []);
-  labels.set('circle', []);
-  labels.set('line', []);
+  labels.set('Rectangle', []);
+  labels.set('Circle', []);
+  labels.set('Line', []);
   $: canTrain = checkCanTrain(labels);
   let newLabel = '';
   $: toAdd = newLabel.trim().toLowerCase();
@@ -36,8 +38,8 @@
 
   let sketch = function(p5) {
     let canvas;
-    let canvasWidth = 200;
-    let canvasHeight = 150;
+    // let canvasWidth = 200;
+    // let canvasHeight = 150;
 
     p5.setup = () => {
       canvas = p5.createCanvas(canvasWidth, canvasHeight);
@@ -67,6 +69,10 @@
   };
 
   onMount(_ => {
+    const canvasHolderDiv = document.querySelector('#canvas-holder');
+    canvasWidth = canvasHolderDiv.clientWidth;
+    canvasHeight = canvasHolderDiv.clientHeight;
+
     myp5 = new p5(sketch);
   });
 
@@ -136,23 +142,66 @@
 </script>
 
 <style>
-  .add-examples-container {
-    padding: 5px;
+  .labels-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .labels-container .labels-title {
+    margin-right: 6px;
+  }
+
+  .canvas-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    /* height: 190px; */
+  }
+
+  #canvas-holder {
+    width: 200px;
     height: 160px;
+    margin-right: 10px;
+  }
+
+  .add-examples-container {
+    flex: 1;
+    flex-basis: 300px;
+    padding: 5px;
+    height: 100%;
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
-    overflow-x: auto;
+    overflow: auto;
   }
 
   .add-example-group {
     margin: 5px 0px;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
   }
 
-  .example-count {
-    margin: 0px 10px;
+  .add-example-group .buttons {
+    margin-bottom: 0px;
+  }
+
+  .add-example-group .buttons .button {
+    margin-bottom: 0px;
+  }
+
+  .example-images-container {
+    flex: 1;
+    height: 40px;
+    display: flex;
+    align-items: center;
+  }
+
+  .example-images-container img {
+    border: 1px dotted lightgray;
+    margin: 0px 4px;
+    height: 80%;
   }
 
   .result-item {
@@ -184,25 +233,28 @@
     <a href="https://ml5js.org/" target="_blank">ML5</a>
   </h1>
 
-  <h1 class="title is-5">Labels</h1>
+  <div class="labels-container">
+    <h1 class="labels-title is-capitalized is-size-4 has-text-weight-bold">Labels:</h1>
+    <div class="field is-grouped is-grouped-multiline">
+      {#each Array.from(labels.keys()) as label}
+        <div class="control">
+          <div class="tags has-addons">
+            <span class="tag is-link is-light is-medium">{label}</span>
+            {#if mode === 'train'}
+              <span class="tag is-delete is-medium" on:click={e => removeLabel(label)} />
+            {/if}
+          </div>
+        </div>
+      {/each}
+    </div>
+  </div>
+
   {#if Array.from(labels.keys()).length < 2}
     <em class="content has-text-danger is-small">Please add at least two labels</em>
   {/if}
-  <div class="field is-grouped is-grouped-multiline">
-    {#each Array.from(labels.keys()) as label}
-      <div class="control">
-        <div class="tags has-addons">
-          <span class="tag is-link is-light">{label}</span>
-          {#if mode === 'train'}
-            <span class="tag is-delete" on:click={e => removeLabel(label)} />
-          {/if}
-        </div>
-      </div>
-    {/each}
-  </div>
 
   {#if mode === 'train'}
-    <div class="field has-addons">
+    <div class="field has-addons" style="margin-top: 5px;">
       <div class="control">
         <input class="input is-small" type="text" placeholder="Add a label" bind:value={newLabel} />
       </div>
@@ -221,8 +273,8 @@
   {/if}
 
   <br />
-  <div class="columns">
-    <div class="column is-one-third">
+  <div class="canvas-container">
+    <div class="">
       <div id="canvas-holder" />
       <button
         class="button is-light is-small"
@@ -236,15 +288,26 @@
       </button>
     </div>
     {#if mode === 'train'}
-      <div class="column add-examples-container">
+      <div class="add-examples-container">
         {#each Array.from(labels.keys()) as label}
           <div class="add-example-group">
-            <div class="example-count">{labels.get(label).length}</div>
-            <button
-              class="button {activeLabelButton === label ? 'is-info' : ''}"
-              on:click={_ => addTrainingExampleFor(label)}>
-              Add as a {label}
-            </button>
+            <div class="buttons has-addons">
+              <button
+                class="button is-small {activeLabelButton === label ? 'is-info' : ''}"
+                on:click={_ => addTrainingExampleFor(label)}>
+                Add as a
+                <span class="has-text-weight-bold" style="margin-left: 4px">{label}</span>
+              </button>
+              <button title="Edit examples" class="button is-small">Count: {labels.get(label).length}</button>
+            </div>
+
+            <div class="example-images-container">
+              {#each labels.get(label).slice(0, 5) as img}
+                <img src={img} alt="" />
+              {/each}
+              {#if labels.get(label).length > 5}...{/if}
+            </div>
+
           </div>
         {/each}
       </div>

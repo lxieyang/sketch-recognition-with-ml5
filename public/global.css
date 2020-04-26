@@ -3,10 +3,6 @@ body {
   padding: 10px;
 }
 
-img {
-  display: none;
-}
-
 canvas {
   border: 1px solid black;
 }
