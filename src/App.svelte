@@ -1,6 +1,8 @@
 <script>
   import { onMount } from 'svelte';
   import p5 from 'p5';
+  import JSZip from 'jszip/dist/jszip.min';
+  import FileSaver from 'file-saver';
 
   let myp5;
   let canvasWidth = 200;
@@ -14,6 +16,7 @@
   labels.set('Circle', []);
   labels.set('Line', []);
   $: canTrain = checkCanTrain(labels);
+  let modelCanBeSaved = false;
   let newLabel = '';
   $: toAdd = newLabel.trim().toLowerCase();
 
@@ -120,6 +123,7 @@
             modelStatus = 'training, loss: ' + lossValue;
           } else {
             modelStatus = 'done!';
+            modelCanBeSaved = true;
           }
         });
       });
@@ -140,6 +144,21 @@
         classificationResults = results;
         // myp5.clearCanvas();
       }
+    });
+  }
+
+  function saveModel() {
+    classifier.save();
+    let zip = new JSZip();
+    let imgs = zip.folder('training-images');
+    Array.from(labels.keys()).forEach(lb => {
+      let examples = labels.get(lb);
+      examples.forEach((example, idx) => {
+        imgs.file(`${lb}-${idx + 1}.png`, example.split(',')[1], { base64: true });
+      });
+    });
+    zip.generateAsync({ type: 'blob' }).then(function(content) {
+      FileSaver.saveAs(content, 'training-examples.zip');
     });
   }
 </script>
@@ -388,6 +407,9 @@
     </div>
     <div>
       <button class="button is-link" disabled={!canTrain} on:click={trainModel}>Train</button>
+      <button class="button is-success" disabled={!modelCanBeSaved} on:click={saveModel}>
+        Save Model & Training examples
+      </button>
     </div>
   {:else if mode === 'test'}
     {#if classificationResults.length === 0}
