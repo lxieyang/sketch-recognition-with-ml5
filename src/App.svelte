@@ -161,6 +161,18 @@
       FileSaver.saveAs(content, 'training-examples.zip');
     });
   }
+
+  function loadModel(e) {
+    modelStatus = 'Loading custom models...';
+    featureExtractor = ml5.featureExtractor('MobileNet', { numLabels: Array.from(labels.keys()).length }, () => {
+      modelStatus = 'MobileNet loaded...';
+      classifier.load(e.target.files).then(_ => {
+        modelStatus = 'Custom model ready!';
+      });
+    });
+
+    classifier = featureExtractor.classification();
+  }
 </script>
 
 <style>
@@ -410,6 +422,10 @@
       <button class="button is-success" disabled={!modelCanBeSaved} on:click={saveModel}>
         Save Model & Training examples
       </button>
+      <br />
+      <br />
+      <span class="tag is-info">Load model:</span>
+      <input type="file" name="myfile" multiple on:change={loadModel} />
     </div>
   {:else if mode === 'test'}
     {#if classificationResults.length === 0}
