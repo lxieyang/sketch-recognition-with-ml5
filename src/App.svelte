@@ -4,6 +4,10 @@
   import JSZip from 'jszip/dist/jszip.min';
   import FileSaver from 'file-saver';
 
+  String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+  };
+
   let myp5;
   let canvasWidth = 200;
   let canvasHeight = 150;
@@ -18,7 +22,7 @@
   $: canTrain = checkCanTrain(labels);
   let modelCanBeSaved = false;
   let newLabel = '';
-  $: toAdd = newLabel.trim().toLowerCase();
+  $: toAdd = newLabel.trim().capitalize();
 
   let activeLabelButton = '';
 
